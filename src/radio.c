@@ -1,5 +1,6 @@
 #include "cfradio.h"
 
+#include <stdio.h>
 #include <stdbool.h>
 #include <string.h>
 
@@ -49,7 +50,10 @@ int cfradio_open(cfradio *radio, libusb_context *ctx, cfradio_fetcher fetcher, c
 	}
 
 
-	// TODO: Set configuration to '1'
+	if(libusb_set_configuration(radio->handle, 1) != 0) {
+		printf("Failed to set usb configuration\n");
+		return 1;
+	}
 
 	struct libusb_config_descriptor config;
 
@@ -58,7 +62,8 @@ int cfradio_open(cfradio *radio, libusb_context *ctx, cfradio_fetcher fetcher, c
 
 
 	if(libusb_claim_interface(radio->handle, 0) != 0) {
-		printf("Couldn't claim interface");
+		printf("Couldn't claim interface\n");
+		return 1;
 	}
 
 
@@ -100,6 +105,7 @@ int cfradio_close(cfradio *radio) {
 	libusb_release_interface(radio->handle, 0);
 
 	//libusb_close(radio->handle);
+	return 0;
 }
 
 
@@ -182,7 +188,7 @@ void transfer_callback(struct libusb_transfer *transfer) {
 
 		default:
 			radio->state = CFRADIO_STATE_IDLE;
-			printf("error in transfer\n");
+			printf("error in transfer: %s\n", libusb_error_name(transfer->status));
 	}
 
 	cfradio_notify(radio);

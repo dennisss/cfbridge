@@ -1,20 +1,26 @@
 CFBridge
 ========
 
-A C based driver for communicating with a Crazyflie 2.0 using MAVLink
+Wireless MAVLink for Crazyflie 2.0's (CF2) running PX4. Should be plug and play with most GCS applications.
 
-- Should be running PX4 : see http://dev.px4.io/hardware-crazyflie2.html
-- MAVLink stream is accessible via local UDP ports (should be compatible with any existing GCS)
 
-- Requires that libusb-1.0 is installed
+What this is
+------------
 
-Should run alongside a GCS with a Crazyradio PA. This is a commandline utility that configures the radio and allows routing Mavlink messages to a set of UDP ports for a set of radio addresses.
+1. A C based command line bridge for communicating with a Crazyflie 2.0 using MAVLink
+	- The CF2 Should be running PX4 : see http://dev.px4.io/hardware-crazyflie2.html
+	- MAVLink stream is accessible via local UDP ports (should be compatible with any existing GCS)
+
+2. A driver for talking to Crazyradio PA's. (Note that the original crazyradios are not supported)
+	- The driver is mostly separated from the bridge so should be useable in other applications as well
 
 
 Building
 --------
 
-The PX4 Firmware source code should be in `../Firmware` relative to this README.
+Make sure that you have the dev package for libusb-1.0 installed
+
+Run `git submodule update --init` to sync the dependencies
 
 Run `make build`
 
@@ -24,9 +30,9 @@ Usage
 
 Connect a Crazyradio PA via USB and run `make run`.
 
-- Once the CF2 is turned on, the bridge should echo 'Connected!'
+- Once the CF2 is turned on, the console should echo 'Connected!'
 
-- Then start up QGC listening on port 14550
+- Then start QGC listening on port 14550 (it listens on this port by default)
 
 
 Protocol

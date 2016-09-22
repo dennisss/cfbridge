@@ -5,7 +5,7 @@ set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake)
 
 find_package(LibUSB REQUIRED)
 include_directories(
-	../Firmware/src/modules/syslink
+	lib/Firmware/src/modules/syslink
 	include
 	${LibUSB_INCLUDE_DIRS}
 )
