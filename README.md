@@ -35,6 +35,14 @@ Connect a Crazyradio PA via USB and run `make run`.
 - Then start QGC listening on port 14550 (it listens on this port by default)
 
 
+ROS
+---
+
+To connect to the crazyflie via mavros:
+
+- Start up cfbridge using the above instructions
+
+- Start mavros with a command such as `roslaunch mavros px4.launch fcu_url:="udp://:14550@127.0.0.1:14555"`
 Protocol
 --------
 
