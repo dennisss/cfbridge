@@ -11,9 +11,10 @@ include_directories(
 )
 
 add_executable(bridge
-	src/main.c
-	src/radio.c
-	src/client.c
+	src/main.cpp
+	src/crazyradio.cpp
+	src/udpclient.cpp
+	src/bridge.cpp
 )
 target_link_libraries(bridge
 
@@ -21,4 +22,4 @@ target_link_libraries(bridge
 )
 
 # TODO: -O3?
-set_target_properties(bridge PROPERTIES COMPILE_FLAGS "-g")
+set_target_properties(bridge PROPERTIES COMPILE_FLAGS "-g -std=c++11")
