@@ -5,36 +5,86 @@
 #include <string.h>
 #include <poll.h>
 
-// TODO: These also need to know which radio called them in order to pick from the correct group of radios
+using namespace std;
+
+static bool running;
+void signal_sigint(int s) {
+	running = false;
+}
+
 // Grabs a message from a client buffer if there are any
-static int fetch_message(RadioUri *uri, crtp_message_t *buf, void *arg) {
+int bridge_fetch_message(RadioUri *uri, crtp_message_t *buf, void *arg) {
 
 	Bridge *b = (Bridge *) arg;
+	int ri = b->radio_numbers[uri->num];
 
-	if(b->clients[0]->buffer_empty())
+	// Simple scheduling (ping different client each time)
+	// TODO: Instead, we should only switch once a full mavlink message has been sent
+	// TODO: Idle mode clients will need a separate scheduling policy as well
+	b->active_clients[ri] = (b->active_clients[ri] + 1) % b->connections[ri].size();
+
+	int ci = b->active_clients[ri];
+	BridgeConnection &c = b->connections[ri][ci];
+
+	// Switch the radio to the current client
+	*uri = c.config;
+
+	if(c.client->buffer_empty())
 		return 0;
 
-	crtp_message_t *msg = b->clients[0]->buffer_head();
-	b->clients[0]->pop_head();
+	crtp_message_t *msg = c.client->buffer_head();
+	c.client->pop_head();
 
 	// TODO: This could be more efficient
 	memcpy(buf, msg, sizeof(crtp_message_t));
 	return 1;
 }
 
-static int handle_message(int status, crtp_message_t *msg, void *arg) {
+int bridge_handle_message(int status, RadioUri *uri, crtp_message_t *msg, void *arg) {
 	Bridge *b = (Bridge *) arg;
+	int ri = b->radio_numbers[uri->num];
+	int ci = b->active_clients[ri];
+	BridgeConnection &c = b->connections[ri][ci];
 
 	if(msg->port != CRTP_PORT_MAVLINK)
 		return 0;
 
 	// Forward to udp
-	b->clients[0]->write(msg);
+	c.client->write(msg);
 	return 1;
 }
 
 
+Bridge::Bridge(libusb_context *ctx, vector<Crazyradio::Ptr> radios, vector<vector<BridgeConnection>> connections) {
+
+	this->ctx = ctx;
+
+	this->radios = radios;
+
+	for(auto radio : radios) {
+		radio->set_callbacks(bridge_fetch_message, bridge_handle_message, this);
+	}
+
+	this->connections = connections;
+
+
+	// Initialize all radios to first client
+	active_clients.resize(radios.size(), 0);
+	for(int i = 0; i < radios.size(); i++) {
+		radios[i]->set_config(connections[i][0].config);
+
+		radio_numbers[radios[i]->get_number()] = i;
+	}
+
+}
+
+
+
 void Bridge::run() {
+
+	// Intercept ctrl-c for gracefully quiting
+	running = true;
+	signal(SIGINT, signal_sigint);
 
 
 	struct pollfd fds[32]; // TODO: We won't need all of them, but I don't know how many libusb needs
@@ -78,21 +128,34 @@ void Bridge::run() {
 			// timeout
 
 			// TODO: Maintain a timer for each radio
-			radios[0]->notify();
+			// Then if any of them timeout beyond the idle time, we should do this
+			for(auto radio : radios) {
+				radio->notify();
+			}
 			continue;
 		}
 
 
 		// Handling udp transfers
-		if(fds[0].revents) {
-			if(fds[0].revents & POLLIN) {
+		int n = 0;
+		for(int i = 0; i < connections.size(); i++) {
+			for(int j = 0; j < connections[i].size(); j++) {
+				BridgeConnection &c = connections[i][j];
 
-				if(clients[0]->read(buf, res) > 0) {
-					radios[0]->notify();
+				if(fds[n].revents) {
+					if(fds[n].revents & POLLIN) {
+
+						if(c.client->read() > 0) {
+							int n = c.config.num;
+							radios[n]->notify(); // TODO: THis assumes that there are no gaps in the radio array
+						}
+
+					}
+					res--;
 				}
 
+				n++;
 			}
-			res--;
 		}
 
 

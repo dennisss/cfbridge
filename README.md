@@ -33,7 +33,54 @@ Connect a Crazyradio PA via USB and run `make run`.
 - Once the CF2 is turned on, the console should echo 'Connected!'
 
 - Then start QGC listening on port 14550 (it listens on this port by default)
+	- Note: The default parameters are equivalent running with a single line configuration of `udp://:14550@:14555 radio://0/80/2M/E7E7E7E7E7` (see below)
 
+
+To configure these settings, make a file named `config.txt` and run `make run config.txt`.
+
+Each line of the file is the configuration for a single Crazyflie. For example a file with the following two lines would connect to two Crazyflies on two addresses using a single radio.
+
+	udp://:14551@:14556 radio://0/80/2M/0000000001
+	udp://:14552@:14557 radio://0/80/2M/0000000002
+
+
+Advanced (Swarming)
+-------------------
+
+Each Crazyflie is configured by a single line which is a pair of URIs:
+
+- The client uri specifes how to forward/receive messages from other networked QGC's:
+	- The format is `udp://[<local_addr>]:<local_port>@[<remote_addr>]:<remote_port>`
+	- The local ip address/port are to configure which interface it should listen to for incoming messages from a GCS
+	- The remote ip address/port are to specify where messages received from the radio is forwarded
+	- If the `*_addr` part of either is ommited, `127.0.0.1` is assumed
+
+- The radio uri specifes how to setup the radio
+	- The format is `radio://<radio_number>/[<channel_number>]/[<data_rate>]/[<address>]`
+		- All arguments after radio_number are optional
+	- `radio_number` should be 0 to N-1 where N is the number of radios you have connected. The ordering is arbitrary based on how you connecting the radios
+	- `channel_number` goes from 0 to 125 and occupies frequencies at 2.4GHz + (channel #) * 1MHz.
+	- `data_rate` is either `250K`, `1M`, or `2M` representing the desired bitrate
+	- `address` is a 10 character string representing the 5 byte address in hex format
+		- Default address is `E7E7E7E7E7`
+
+Multiple Crazyflies can connect to one or more radios. We will assume that the # of radios <= # of Crazyflies, otherwise, it will not use all of the radios. The Crazyflies should be configured as follows:
+
+1. Choose N different channel numbers where N is the number of radios
+	-  In general you should not pick consecutive channel numbers if possible and you should try not to overlap any WiFi networks in the area.
+
+2. Assign a channel number to each Crazyflie ideally with not too many on a single channel.
+
+3. Using QGroundControl, change the Syslink parameters to match this channel and give each Crazyflie a unique address
+
+4. `make run config.txt` with the appropriate lines in the config file
+	- Note: Each radio should have a single unique channel
+
+
+Performance Note: This whole program runs reactively as a single thread. Should your USBs be connected to separate buses, you may get slightly more performance by starting multiple instances of this bridge for subsets of the radios
+
+
+TODO: We should also allow configuring the idle rate: When no messages are being transfered, this is how often it will send messages in bidirectional mode to get data back
 
 ROS
 ---
@@ -51,14 +98,6 @@ Mavlink is sent to a UDP server hosted by this program. Those messages are packe
 Transfers to the radio are prioritized over receiving data from the radio
 When no data needs to be sent, the radio will 'idle' and will receive data at
 a higher latency
-
-
-Swarming
---------
-
-TODO: Multiple Crazyflies can be multiplexed on one radio by changing the address
-If multiple radios need to be handled, then multiple instances of this program
-should be spawned
 
 
 Future Optimizations

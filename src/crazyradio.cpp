@@ -4,8 +4,11 @@
 #include <stdbool.h>
 #include <string.h>
 
-#define CRAZYRADIO_PA_VID 0x1915
-#define CRAZYRADIO_PA_PID 0x7777
+#include <regex>
+#include <iostream>
+
+using namespace std;
+
 
 #define TYPE_SETTER 0x40
 #define TYPE_GETTER 0xC0
@@ -22,6 +25,38 @@
 #define GET_SCAN_CHANNELS 0x21
 #define LAUNCH_BOOTLOADER 0xFF
 
+bool Crazyradio::Parse(string uri, RadioUri &out) {
+	regex reg("^radio://([0-9]+)(/([0-9]+)(/(250K|1M|2M)(/([0-9A-F]{10}))?)?)?$");
+	smatch mat;
+
+	if (!regex_match(uri, mat, reg)) {
+		cerr << "Invalid radio uri: " << uri << endl;
+		return false;
+	}
+
+	out.num = stoi(mat[1].str());
+
+	if(mat[3].length() > 0)
+		out.channel = stoi(mat[3].str());
+	else
+		out.channel = 80;
+
+	if(mat[5].length() > 0) {
+		if(mat[5] == "250K")
+			out.rate = 0;
+		else if(mat[5] == "1M")
+			out.rate = 1;
+		else if(mat[5] == "2M")
+			out.rate = 2;
+	}
+
+	if(mat[7].length() > 0)
+		out.addr = stol(mat[7].str(), 0, 16);
+	else
+		out.addr = 0xE7E7E7E7E7;
+
+	return true;
+}
 
 std::vector<Crazyradio::Ptr> Crazyradio::Enumerate(libusb_context *ctx) {
 
@@ -36,7 +71,7 @@ std::vector<Crazyradio::Ptr> Crazyradio::Enumerate(libusb_context *ctx) {
 		libusb_get_device_descriptor(list[i], &desc); // TODO: Error check this
 
 		if(desc.idVendor == CRAZYRADIO_PA_VID && desc.idProduct == CRAZYRADIO_PA_PID) {
-			out.push_back(std::shared_ptr<Crazyradio>(new Crazyradio(list[i])));
+			out.push_back(std::shared_ptr<Crazyradio>(new Crazyradio(list[i], i)));
 		}
 	}
 
@@ -46,13 +81,19 @@ std::vector<Crazyradio::Ptr> Crazyradio::Enumerate(libusb_context *ctx) {
 }
 
 
-Crazyradio::Crazyradio(libusb_device *device) {
+Crazyradio::Crazyradio(libusb_device *device, int num) {
 	this->device = device;
 	libusb_ref_device(device);
 
+	this->number = num;
+	this->handle = NULL;
 }
 
 Crazyradio::~Crazyradio() {
+	if(handle != NULL) {
+		this->close();
+	}
+
 	libusb_unref_device(device);
 }
 
@@ -134,8 +175,22 @@ int Crazyradio::close() {
 	libusb_release_interface(this->handle, 0);
 
 	libusb_close(this->handle);
+
+	this->handle = NULL;
+
 	return 0;
 }
+
+int Crazyradio::set_config(const RadioUri &uri) {
+	int res = 0;
+
+	res |= set_radio_channel(uri.channel);
+	res |= set_radio_address(uri.addr);
+	res |= set_data_rate(uri.rate);
+
+	return res;
+}
+
 
 
 int Crazyradio::notify() {

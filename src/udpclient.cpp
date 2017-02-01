@@ -5,11 +5,77 @@
 #include <unistd.h>
 #include <fcntl.h>
 
+#include <regex>
+#include <iostream>
 
-//bool UdpUri::Parse()
+using namespace std;
 
 
-int UdpClient::open(int lport, int rport) {
+bool UdpClient::Parse(string uri, UdpUri &out) {
+
+	regex reg("^udp://([0-9\\.]+)?:([0-9]+)@([0-9\\.]+)?:([0-9]+)$");
+	smatch mat;
+
+	if (!regex_match(uri, mat, reg)) {
+		cerr << "Invalid udp uri: " << uri << endl;
+		return false;
+	}
+
+	int res = 1;
+
+	// Init server address
+	memset((char *)&out.server_addr, 0, sizeof(out.server_addr));
+	out.server_addr.sin_family = AF_INET;
+
+	// Server interface ip address
+	if(mat[1].length() > 0)
+		res = inet_pton(AF_INET, mat[1].str().c_str(), &out.server_addr.sin_addr);
+	else
+		out.server_addr.sin_addr.s_addr = htonl(INADDR_ANY);
+
+	if(!res) {
+		printf("Invalid server ip address\n");
+		return false;
+	}
+
+	// Server port
+	out.server_addr.sin_port = htons( stoi(mat[2]) );
+
+
+	// Init client address
+	memset((char *)&out.client_addr, 0, sizeof(out.client_addr));
+	out.client_addr.sin_family = AF_INET;
+
+	// Client ip address
+	if(mat[3].length() > 0)
+		res = inet_pton(AF_INET, mat[3].str().c_str(), &out.client_addr.sin_addr);
+	else
+		res = inet_pton(AF_INET, "127.0.0.1", &out.client_addr.sin_addr);
+
+	if(!res) {
+		printf("Invalid client ip address\n");
+		return false;
+	}
+
+	// Client port
+	out.server_addr.sin_port = htons( stoi(mat[4]) );
+
+	return true;
+}
+
+UdpClient::UdpClient(const UdpUri &uri) {
+	this->config = uri;
+	this->netfd = -1;
+}
+
+UdpClient::~UdpClient() {
+	if(this->netfd > 0) {
+		this->close();
+	}
+}
+
+
+int UdpClient::open() {
 
 	this->buf_size = 0;
 	this->buf_i = 0;
@@ -19,14 +85,7 @@ int UdpClient::open(int lport, int rport) {
 		return 1;
 	}
 
-	// The server address
-	struct sockaddr_in addr;
-	memset((char *)&addr, 0, sizeof(addr));
-	addr.sin_family = AF_INET;
-	addr.sin_addr.s_addr = htonl(INADDR_ANY);
-	addr.sin_port = htons(lport);
-
-	if (bind(this->netfd, (struct sockaddr *)&addr, sizeof(addr)) < 0) {
+	if (::bind(this->netfd, (struct sockaddr *)&config.server_addr, sizeof(config.server_addr)) < 0) {
 		perror("bind failed");
 		::close(this->netfd);
 		return 1;
@@ -39,17 +98,12 @@ int UdpClient::open(int lport, int rport) {
 		return 1;
 	}
 
-	// Setup where messages should be sent to
-	memset((char *)&this->client_addr, 0, sizeof(this->client_addr));
-	this->client_addr.sin_family = AF_INET;
-	this->client_addr.sin_port = htons(rport);
-	inet_pton(AF_INET, "127.0.0.1", &this->client_addr.sin_addr);
-
 	return 0;
 }
 
 int UdpClient::close() {
 	::close(this->netfd);
+	this->netfd = -1;
 	return 0;
 }
 
@@ -79,11 +133,13 @@ int UdpClient::read() {
 			this->buf_size++;
 	}
 
+	return n;
+
 // TODO: Return values
 }
 
 int UdpClient::write(crtp_message_t *msg) {
-	sendto(this->netfd, &msg->data, msg->size - 1, 0, (const struct sockaddr *) &this->client_addr, sizeof(this->client_addr));
+	return sendto(this->netfd, &msg->data, msg->size - 1, 0, (const struct sockaddr *) &config.client_addr, sizeof(config.client_addr));
 }
 
 int UdpClient::buffer_empty() {

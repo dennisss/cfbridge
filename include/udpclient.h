@@ -26,12 +26,13 @@ public:
 
 	typedef std::shared_ptr<UdpClient> Ptr;
 
-
 	static bool Parse(std::string uri, UdpUri &out);
 
-	/* Creates a new client that is listening for messages on lport and will forward messages to rport */
-	int open(int lport = 14555, int rport = 14550);
+	UdpClient(const UdpUri &uri);
+	~UdpClient();
 
+	/* Creates a new client that is listening for messages on lport and will forward messages to rport */
+	int open();
 	int close();
 
 
@@ -56,9 +57,7 @@ public:
 
 private:
 	int netfd;
-	//uint64_t radio_addr;
-	struct sockaddr_in client_addr; // Where messages should be sent (GCS address)
-	struct sockaddr_in server_addr;
+	UdpUri config;
 	crtp_message_t buf[UDPCLIENT_MAX_BUFFERSIZE]; // Messages received from GCS which should be sent to usb
 	int buf_i;
 	int buf_size;

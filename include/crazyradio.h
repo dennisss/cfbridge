@@ -19,6 +19,10 @@
 #include <crtp.h>
 
 
+#define CRAZYRADIO_PA_VID 0x1915
+#define CRAZYRADIO_PA_PID 0x7777
+
+
 /**
  * Describes a single configuration state of the radio. Each Crazyflie will requires a unique configuration to be matched by the radio for it to receive data.
  */
@@ -82,7 +86,13 @@ public:
 	static std::vector<Crazyradio::Ptr> Enumerate(libusb_context *ctx);
 
 
-	Crazyradio(libusb_device *device);
+	/**
+	 * Creates a new Crazyradio
+	 *
+	 * @param device a usb device
+	 * @param num a unique number identifying this radio. the radio will only operate on uris with this number
+	 */
+	Crazyradio(libusb_device *device, int num);
 	~Crazyradio();
 
 
@@ -108,6 +118,7 @@ public:
 	void set_callbacks(CrazyradioFetcher fetcher, CrazyradioHandler handler, void *arg);
 
 
+	int get_number() { return this->number; }
 
 private:
 
@@ -165,6 +176,7 @@ private:
 	cfradio_state state;
 
 	RadioUri activeConfig;
+	int number;
 
 	struct libusb_transfer *transfer;
 	usb_message inbuf;
