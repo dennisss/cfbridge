@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <poll.h>
+#include <signal.h>
 
 using namespace std;
 
@@ -106,8 +107,7 @@ void Bridge::run() {
 		fds[nfds].events = usbfds[i]->events;
 		nfds++;
 	}
-	// TODO: Check why this isn't working
-	//libusb_free_pollfds(usbfds);
+	libusb_free_pollfds(usbfds);
 
 	struct timeval tv;
 	memset(&tv, 0, sizeof(tv));

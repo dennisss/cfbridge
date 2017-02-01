@@ -33,15 +33,15 @@ Connect a Crazyradio PA via USB and run `make run`.
 - Once the CF2 is turned on, the console should echo 'Connected!'
 
 - Then start QGC listening on port 14550 (it listens on this port by default)
-	- Note: The default parameters are equivalent running with a single line configuration of `udp://:14550@:14555 radio://0/80/2M/E7E7E7E7E7` (see below)
+	- Note: The default parameters are equivalent running with a single line configuration of `udp://:14555@:14550 radio://0/80/2M/E7E7E7E7E7` (see below)
 
 
 To configure these settings, make a file named `config.txt` and run `make run config.txt`.
 
 Each line of the file is the configuration for a single Crazyflie. For example a file with the following two lines would connect to two Crazyflies on two addresses using a single radio.
 
-	udp://:14551@:14556 radio://0/80/2M/0000000001
-	udp://:14552@:14557 radio://0/80/2M/0000000002
+	udp://:14556@:14551 radio://0/80/2M/0000000001
+	udp://:14557@:14552 radio://0/80/2M/0000000002
 
 
 Advanced (Swarming)
@@ -90,6 +90,8 @@ To connect to the crazyflie via mavros:
 - Start up cfbridge using the above instructions
 
 - Start mavros with a command such as `roslaunch mavros px4.launch fcu_url:="udp://:14550@127.0.0.1:14555"`
+
+
 Protocol
 --------
 

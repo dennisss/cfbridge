@@ -175,7 +175,7 @@ private:
 	libusb_device_handle *handle;
 	cfradio_state state;
 
-	RadioUri activeConfig;
+	RadioUri active_config;
 	int number;
 
 	struct libusb_transfer *transfer;

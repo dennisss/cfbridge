@@ -138,9 +138,13 @@ int Crazyradio::open(libusb_device_handle *handle) {
 	// Configuring radio
 	int res = 0;
 
-	res |= set_radio_channel(80);
-	res |= set_radio_address(0xE7E7E7E7E7);
-	res |= set_data_rate(2);
+	// Setting default radio configuration
+	RadioUri def;
+	def.num = this->number;
+	def.channel = 80;
+	def.addr = 0xE7E7E7E7E7;
+	def.rate = 2;
+	this->set_config(def);
 
 	res |= set_cont_carrier(false);
 	res |= set_radio_power(3); // 0dBm
@@ -159,7 +163,6 @@ int Crazyradio::open(libusb_device_handle *handle) {
 	this->transfer = libusb_alloc_transfer(0);
 
 
-
 	return 0;
 
 }
@@ -168,13 +171,14 @@ int Crazyradio::open(libusb_device_handle *handle) {
 int Crazyradio::close() {
 	if(this->state != CFRADIO_STATE_IDLE) {
 		libusb_cancel_transfer(this->transfer);
+		// TODO: I need to wait for the cancelation to be complete
 	}
 
 	libusb_free_transfer(this->transfer);
 
 	libusb_release_interface(this->handle, 0);
 
-	libusb_close(this->handle);
+	//libusb_close(this->handle);
 
 	this->handle = NULL;
 
@@ -188,6 +192,10 @@ int Crazyradio::set_config(const RadioUri &uri) {
 	res |= set_radio_address(uri.addr);
 	res |= set_data_rate(uri.rate);
 
+	if(res == 0) {
+		this->active_config = uri;
+	}
+
 	return res;
 }
 
@@ -199,18 +207,17 @@ int Crazyradio::notify() {
 		return 0;
 	}
 
-	RadioUri desiredConfig = activeConfig;
-	int available = this->fetcher(&desiredConfig, &this->outbuf, this->arg);
+	RadioUri desired_config = active_config;
+	int available = this->fetcher(&desired_config, &this->outbuf, this->arg);
 
 	// Reconfiguring radio for new message if needed
-	if(desiredConfig.addr != activeConfig.addr) {
-		this->set_radio_address(desiredConfig.addr);
-		activeConfig.addr = desiredConfig.addr;
+	if(desired_config.addr != active_config.addr) {
+		this->set_radio_address(desired_config.addr);
+		active_config.addr = desired_config.addr;
 	}
 
 	/* if we can fetch a message send it, otherwise send a null packet */
 	if(available) {
-		//printf("send %d\n", radio->outbuf.size);
 		submit_transfer(LIBUSB_ENDPOINT_OUT);
 	}
 	else {
@@ -268,7 +275,7 @@ void crazyradio_transfer_callback(struct libusb_transfer *transfer) {
 					cmsg.size = transfer->actual_length - 1;
 					memcpy(&cmsg.header, radio->inbuf.data, cmsg.size);
 
-					radio->handler(ackReceived, &radio->activeConfig, &cmsg, radio->arg);
+					radio->handler(ackReceived, &radio->active_config, &cmsg, radio->arg);
 
 					// We got non-empty packets, so trigger more to be sent
 				}

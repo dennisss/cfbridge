@@ -1,7 +1,6 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <stdbool.h>
-#include <signal.h>
 
 #include "bridge.h"
 #include "udpclient.h"
@@ -24,22 +23,6 @@ void usage() {
 }
 
 
-/*
-	Arguments
-
-	- Define radios
-		- How many to open
-
-		--radios n
-
-	- Define radio clients
-		- 2 UDP ports, channel #, speed,
-
-		--client udp://:14550@:14555 radio://0/23/2M
-
-		THIS IS the same format as the regular
-		 radio://<dongle nbr>/<radio channel>/[250K,1M,2M]/E7E7E7E7E7
-*/
 int main(int argc, char *argv[]) {
 	int res = 0;
 
@@ -155,7 +138,10 @@ int main(int argc, char *argv[]) {
 	b.run();
 
 
-	// TODO: Cleanup all connections here (or set their destructor behavior to do this automatically)
+
+	for(auto r : radios) {
+		r->close();
+	}
 
 	libusb_exit(ctx);
 

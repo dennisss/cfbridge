@@ -58,7 +58,7 @@ bool UdpClient::Parse(string uri, UdpUri &out) {
 	}
 
 	// Client port
-	out.server_addr.sin_port = htons( stoi(mat[4]) );
+	out.client_addr.sin_port = htons( stoi(mat[4]) );
 
 	return true;
 }
