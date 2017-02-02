@@ -58,7 +58,7 @@ typedef int (*CrazyradioHandler)(int status, RadioUri *uri, crtp_message_t *msg,
 
 typedef enum {
 	CFRADIO_STATE_IDLE = 0, /* doing nothing */
-	CFRADIO_STATE_CONFIG, /* in the process of reconfiguring rx/tx parameters */
+	CFRADIO_STATE_CONFIGURING, /* in the process of reconfiguring rx/tx parameters */
 	CFRADIO_STATE_SENDING, /* sending a data message */
 	CFRADIO_STATE_RECEIVING /* receiving a data message */
 } cfradio_state;
@@ -132,7 +132,7 @@ private:
 	 * should be between 0 and  125
 	 */
 	int set_radio_channel(uint8_t channel);
-	int set_radio_address(uint64_t addr);
+	int set_radio_address(uint64_t addr, bool async = false);
 	int set_data_rate(uint8_t rate);
 
 	/**
@@ -180,7 +180,8 @@ private:
 
 	struct libusb_transfer *transfer;
 	usb_message inbuf;
-	crtp_message_t outbuf;
+	crtp_message_t outbuf; bool outvalid;
+	unsigned char cfgbuf[16];
 
 	int connected;
 

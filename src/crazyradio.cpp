@@ -49,6 +49,9 @@ bool Crazyradio::Parse(string uri, RadioUri &out) {
 		else if(mat[5] == "2M")
 			out.rate = 2;
 	}
+	else {
+		out.rate = 2;
+	}
 
 	if(mat[7].length() > 0)
 		out.addr = stol(mat[7].str(), 0, 16);
@@ -210,10 +213,13 @@ int Crazyradio::notify() {
 	RadioUri desired_config = active_config;
 	int available = this->fetcher(&desired_config, &this->outbuf, this->arg);
 
+	outvalid = available? true : false;
+
 	// Reconfiguring radio for new message if needed
 	if(desired_config.addr != active_config.addr) {
-		this->set_radio_address(desired_config.addr);
+		this->set_radio_address(desired_config.addr, true);
 		active_config.addr = desired_config.addr;
+		return 0;
 	}
 
 	/* if we can fetch a message send it, otherwise send a null packet */
@@ -241,7 +247,21 @@ void crazyradio_transfer_callback(struct libusb_transfer *transfer) {
 
 	switch(transfer->status){
 		case LIBUSB_TRANSFER_COMPLETED:
-			if(radio->state == CFRADIO_STATE_SENDING) {
+			if(radio->state == CFRADIO_STATE_CONFIGURING) {
+
+				// TODO: This is redundant with notify()
+				// We are just doing this here again to avoid re-fetching a message
+				if(radio->outvalid) {
+					radio->submit_transfer(LIBUSB_ENDPOINT_OUT);
+				}
+				else {
+					radio->submit_null();
+				}
+
+				return;
+
+			}
+			else if(radio->state == CFRADIO_STATE_SENDING) {
 				radio->submit_transfer(LIBUSB_ENDPOINT_IN);
 				radio->state = CFRADIO_STATE_RECEIVING;
 			}
@@ -338,10 +358,39 @@ int Crazyradio::set_radio_channel(uint8_t channel) {
 	) < 0;
 }
 
-int Crazyradio::set_radio_address(uint64_t addr) {
+int Crazyradio::set_radio_address(uint64_t addr, bool async) {
+
+	// The usb protocol is big endian
+	unsigned char addr_bytes[5];
+	for(int i = 0; i < 5; i++) {
+		addr_bytes[i] = *(((unsigned char *) &addr) + (4 - i));
+	}
+
+	if(async) {
+
+		unsigned char *buf = this->cfgbuf;
+
+		libusb_fill_control_setup(buf,
+			TYPE_SETTER, SET_RADIO_ADDRESS, 0, 0, 5
+		);
+
+		memcpy(buf + sizeof(libusb_control_setup), addr_bytes, 5);
+
+		libusb_fill_control_transfer(
+			this->transfer, this->handle, buf,
+			crazyradio_transfer_callback, this, 1000
+		);
+
+		libusb_submit_transfer(this->transfer);
+		this->state = CFRADIO_STATE_CONFIGURING;
+
+		return 0;
+	}
+
+
 	return libusb_control_transfer(
 		handle, TYPE_SETTER, SET_RADIO_ADDRESS,
-		0, 0, (unsigned char *) &addr, 5, 0
+		0, 0, (unsigned char *) &addr_bytes, 5, 0
 	) < 0;
 }
 

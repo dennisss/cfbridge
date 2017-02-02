@@ -40,8 +40,8 @@ To configure these settings, make a file named `config.txt` and run `make run co
 
 Each line of the file is the configuration for a single Crazyflie. For example a file with the following two lines would connect to two Crazyflies on two addresses using a single radio.
 
-	udp://:14556@:14551 radio://0/80/2M/0000000001
-	udp://:14557@:14552 radio://0/80/2M/0000000002
+	udp://:14556@:14551 radio://0/80/2M/0101010101
+	udp://:14557@:14552 radio://0/80/2M/0202020202
 
 
 Advanced (Swarming)
@@ -63,6 +63,7 @@ Each Crazyflie is configured by a single line which is a pair of URIs:
 	- `data_rate` is either `250K`, `1M`, or `2M` representing the desired bitrate
 	- `address` is a 10 character string representing the 5 byte address in hex format
 		- Default address is `E7E7E7E7E7`
+		- You should NOT pick `0000000001` etc. as these only have a few bit flips. Something like `0101010101` is preferred for transmission robustness.
 
 Multiple Crazyflies can connect to one or more radios. We will assume that the # of radios <= # of Crazyflies, otherwise, it will not use all of the radios. The Crazyflies should be configured as follows:
 
