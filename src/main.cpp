@@ -34,7 +34,7 @@ int main(int argc, char *argv[]) {
 	ifstream file(argc == 2? argv[1] : "default.txt");
 
 	if(!file.is_open()) {
-		cout << "Couldn't open config file: default.txt" << endl;
+		cout << "Couldn't open config file: " << (argc == 2? argv[1] : "default.txt") << endl;
 		return 1;
 	}
 

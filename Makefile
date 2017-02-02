@@ -7,7 +7,7 @@ build:
 	cd build; cmake ..; make
 
 run:
-	./build/bridge
+	./build/bridge ${CONFIG}
 
 clean:
 	rm -rf build

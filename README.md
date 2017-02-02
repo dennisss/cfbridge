@@ -36,7 +36,7 @@ Connect a Crazyradio PA via USB and run `make run`.
 	- Note: The default parameters are equivalent running with a single line configuration of `udp://:14555@:14550 radio://0/80/2M/E7E7E7E7E7` (see below)
 
 
-To configure these settings, make a file named `config.txt` and run `make run config.txt`.
+To configure these settings, make a file named `config.txt` and run `CONFIG=config.txt make run`.
 
 Each line of the file is the configuration for a single Crazyflie. For example a file with the following two lines would connect to two Crazyflies on two addresses using a single radio.
 
