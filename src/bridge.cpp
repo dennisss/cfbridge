@@ -144,12 +144,9 @@ void Bridge::run() {
 
 				if(fds[n].revents) {
 					if(fds[n].revents & POLLIN) {
-
 						if(c.client->read() > 0) {
-							int n = c.config.num;
-							radios[n]->notify(); // TODO: THis assumes that there are no gaps in the radio array
+							radios[i]->notify();
 						}
-
 					}
 					res--;
 				}
