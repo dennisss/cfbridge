@@ -59,8 +59,8 @@ private:
 	int netfd;
 	UdpUri config;
 	crtp_message_t buf[UDPCLIENT_MAX_BUFFERSIZE]; // Messages received from GCS which should be sent to usb
-	int buf_i;
-	int buf_size;
+	int buf_i = 0; /**< Index of the next spot in the buffer */
+	int buf_size = 0; /**< Number of elements in the buffer */
 };
 
 

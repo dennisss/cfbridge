@@ -113,9 +113,9 @@ int UdpClient::close() {
 
 int UdpClient::read() {
 
-// TODO: Which memory buffer should I use
+	char raw[512];
 
-	int n = recvfrom(this->netfd, buf, 512, 0, NULL, NULL);
+	int n = recvfrom(this->netfd, raw, 512, 0, NULL, NULL);
 
 
 	for(int i = 0; i < n; i += CRTP_MAX_DATA_SIZE) {
@@ -125,7 +125,7 @@ int UdpClient::read() {
 		msg->size = size + 1;
 		msg->header = 0;
 		msg->port = CRTP_PORT_MAVLINK;
-		memcpy(msg->data, buf + i, size);
+		memcpy(msg->data, raw + i, size);
 
 		// Update buffer size and offset
 		this->buf_i = (this->buf_i + 1) % UDPCLIENT_MAX_BUFFERSIZE;
