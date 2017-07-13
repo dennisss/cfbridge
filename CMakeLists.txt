@@ -7,6 +7,7 @@ find_package(LibUSB REQUIRED)
 include_directories(
 	lib/Firmware/src/modules/syslink
 	include
+	${LIBUSB_1_INCLUDE_DIRS}
 	${LibUSB_INCLUDE_DIRS}
 )
 
@@ -17,7 +18,7 @@ add_executable(bridge
 	src/bridge.cpp
 )
 target_link_libraries(bridge
-
+	${LIBUSB_1_LIBRARIES}
 	${LibUSB_LIBRARIES}
 )
 
