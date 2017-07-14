@@ -107,7 +107,11 @@ void Bridge::run() {
 		fds[nfds].events = usbfds[i]->events;
 		nfds++;
 	}
+#ifdef LIBUSB_API_VERSION
 	libusb_free_pollfds(usbfds);
+#else
+	free(usbfds); // libusbx still used on ubuntu 14.04 and doesn't define free_pollfds
+#endif
 
 	struct timeval tv;
 	memset(&tv, 0, sizeof(tv));
