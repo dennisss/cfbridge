@@ -27,8 +27,11 @@ Run `make build`
 
 Usage
 -----
+Make sure you have set the udev permissions to use the USB Radio. To do this, follow the steps listed [here](https://github.com/bitcraze/crazyflie-lib-python#setting-udev-permissions) and **restart** your computer.
 
-Connect a Crazyradio PA via USB and run `make run`.
+Connect a Crazyradio PA via USB. 
+
+Navigate to the cfbridge folder and run `make run`.
 
 - Once the CF2 is turned on, the console should echo 'Connected!'
 
