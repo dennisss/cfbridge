@@ -86,7 +86,8 @@ class RadioBridge:
 
 	def _got_packet(self, pk):
 		#print("GOT: " + str(pk._port) + ' : ' + str(pk.data) + ' ' + str(type(pk.data)))
-		self._sock.sendto(pk.data, ('127.0.0.1', 14550))
+		if pk.port==CRTP_PORT_MAVLINK:
+			self._sock.sendto(pk.data, ('127.0.0.1', 14550))
 
 	def _forward(self, data):
 		pk = CRTPPacket()
@@ -141,6 +142,8 @@ class RadioBridge:
 
 if __name__ == '__main__':
 	# Initialize the low-level drivers (don't list the debug drivers)
+	cflib.crtp.radiodriver.set_retries_before_disconnect(1500)
+	cflib.crtp.radiodriver.set_retries(3)
 	cflib.crtp.init_drivers(enable_debug_driver=False)
 	# Scan for Crazyflies and use the first one found
 	print('Scanning interfaces for Crazyflies...')
