@@ -161,7 +161,7 @@ if __name__ == '__main__':
 		if len(sys.argv)>1:
 			channel= str(sys.argv[1])
 		else: 
-			channel=80
+			channel=str(80)
 
 		link_uri= 'radio://0/'+ channel + '/2M'
 		le = RadioBridge(link_uri) #(available[0][0])
