@@ -147,15 +147,25 @@ if __name__ == '__main__':
 	cflib.crtp.init_drivers(enable_debug_driver=False)
 	# Scan for Crazyflies and use the first one found
 	print('Scanning interfaces for Crazyflies...')
-	available = cflib.crtp.scan_interfaces()
+	if len(sys.argv)>2:
+		address= int(sys.argv[2],16) #address=0xE7E7E7E7E7  
+	else:
+		address=None
+
+	available = cflib.crtp.scan_interfaces(address)
 	print('Crazyflies found:')
 	for i in available:
 		print(i[0])
 
 	if len(available) > 0:
-		le = RadioBridge('radio://0/80/2M') #(available[0][0])
-	else:
-		print('No Crazyflies found, cannot run example')
+		if len(sys.argv)>1:
+			channel= str(sys.argv[1])
+			print('Barza has entered %s' % channel)
+		else: 
+			channel=80
+
+		link_uri= 'radio://0/'+ channel + '/2M'
+		le = RadioBridge(link_uri) #(available[0][0])
 
 	# The Crazyflie lib doesn't contain anything to keep the application alive,
 	# so this is where your application should do something. In our case we
