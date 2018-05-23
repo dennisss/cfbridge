@@ -160,7 +160,6 @@ if __name__ == '__main__':
 	if len(available) > 0:
 		if len(sys.argv)>1:
 			channel= str(sys.argv[1])
-			print('Barza has entered %s' % channel)
 		else: 
 			channel=80
 
